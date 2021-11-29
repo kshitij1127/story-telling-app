@@ -1,4 +1,4 @@
-import React from "react";
+import React, {Component} from "react";
 import { StyleSheet } from "react-native";
 import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -8,7 +8,27 @@ import Feed from "../screens/Feed";
 import CreateStory from "../screens/CreateStory";
 const Tab = createMaterialBottomTabNavigator();
 
-const BottomTabNavigator = () => {
+import firebase from 'firebase'
+
+export default class BottomTabNavigator extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      lightTheme: true,
+    }
+  }
+
+  componentDidMount() {
+    let theme; 
+    firebase.database().ref('/users/' + firebase.auth().currentUser.uid).once('value').then(function(snapshot) {
+      theme = snapshot.val().current_theme;
+    }); 
+    this.setState({
+      lightTheme: theme === "light" ? true : false,
+    });
+  }
+
+  render() {
   return (
     <Tab.Navigator
       labeled={false}
@@ -38,6 +58,7 @@ const BottomTabNavigator = () => {
       <Tab.Screen name="Create Story" component={CreateStory} />
     </Tab.Navigator>
   );
+  }
 };
 
 const styles = StyleSheet.create({
@@ -52,7 +73,5 @@ const styles = StyleSheet.create({
   icons: {
     width: RFValue(30),
     height: RFValue(30)
-  }
+  }, 
 });
-
-export default BottomTabNavigator;

@@ -18,7 +18,7 @@ import * as Speech from "expo-speech";
 import AppLoading from "expo-app-loading";
 import * as Font from "expo-font";
 
-let customFonts = {
+let customFonts = { 
   "Bubblegum-Sans": require("../assets/fonts/BubblegumSans-Regular.ttf")
 };
 
@@ -28,17 +28,27 @@ export default class StoryScreen extends Component {
     this.state = {
       fontsLoaded: false,
       speakerColor: "gray",
-      speakerIcon: "volume-high-outline"
+      speakerIcon: "volume-high-outline",
+      isLiked: false,
+      likes: this.props.route.params.story.story.likes,
     };
+  }
+
+  componentDidMount() {
+    let theme; 
+    firebase.database().ref('/users/' + firebase.auth().currentUser.uid).once('value').then(function(snapshot) {
+      theme = snapshot.val().current_theme;
+    }); 
+    this.setState({
+      lightTheme: theme === "light" ? true : false,
+    });
+
+    this._loadFontsAsync();
   }
 
   async _loadFontsAsync() {
     await Font.loadAsync(customFonts);
     this.setState({ fontsLoaded: true });
-  }
-
-  componentDidMount() {
-    this._loadFontsAsync();
   }
 
   async initiateTTS(title, author, story, moral) {
@@ -53,6 +63,22 @@ export default class StoryScreen extends Component {
       Speech.speak(moral);
     } else {
       Speech.stop();
+    }
+  }
+
+  likeAction = () => {
+    if (this.state.isLiked) {
+      firebase.database().ref('posts').child(this.state.story_id).child('likes').set(firebase.database.ServerValue.increment(-1));
+      this.setState({
+        likes: this.state.likes -= 1,
+        isLiked: false,
+      });
+    } else {
+      firebase.database().ref('posts').child(this.state.story_id).child('likes').set(firebase.database.ServerValue.increment(1));
+      this.setState({
+        isLiked: true,
+        likes: this.state.likes += 1,
+      });
     }
   }
 
@@ -124,10 +150,14 @@ export default class StoryScreen extends Component {
                 </Text>
               </View>
               <View style={styles.actionContainer}>
+                <TouchableOpacity onPress={() => {
+                  this.likeAction();
+                }}>
                 <View style={styles.likeButton}>
                   <Ionicons name={"heart"} size={RFValue(30)} color={"white"} />
                   <Text style={styles.likeText}>12k</Text>
                 </View>
+                </TouchableOpacity>
               </View>
             </ScrollView>
           </View>
